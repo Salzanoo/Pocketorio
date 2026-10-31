@@ -12,7 +12,7 @@ import shutil
 from pathlib import Path
 from audit import ROOT, sdk_path, audit as generate_audit
 from config import DEFAULT_BUNDLE_ID
-from macho import MachO, needs_facade, facade_name
+from macho import MachO, needs_facade, facade_name, raise_sdk_version
 from game_profile import ICON, load as load_profile
 import steam_cloud
 
@@ -152,6 +152,23 @@ def build_launcher(app, sdk, sdl_major):
                     '-o',str(app/'FactorioProbe')],check=True)
 
 
+# The newest SDK the Duo needs to fill its inner display. The runner that builds
+# the IPA may have an older Xcode (26.5 when this was written), so the build says
+# its binaries were built with this one (tools/macho.py raise_sdk_version).
+MINIMUM_SDK = '27.2'
+
+
+def claim_minimum_sdk(app):
+    """Raise the SDK version recorded in every Mach-O file of the app, then sign the
+    changed ones again (ad hoc; SideStore or Xcode signs the app for real)."""
+    for path in [app/'FactorioProbe', *sorted((app/'Frameworks').glob('*.dylib'))]:
+        data = bytearray(path.read_bytes())
+        if raise_sdk_version(data, MINIMUM_SDK):
+            path.write_bytes(data)
+            subprocess.run(['codesign', '--force', '--sign', '-', str(path)], check=True, capture_output=True)
+            print(f'{path.name}: SDK version raised to {MINIMUM_SDK}')
+
+
 def rename_objc_classes(path, replacements):
     m = MachO(path)
     section = next(s for s in m.sections if s['name']=='__objc_classname')
@@ -208,6 +225,7 @@ def main():
                                                  UIApplicationShortcutItemIconSymbolName='gearshape')])
     info.update(build_app_icon(app, args.sdk))
     (app/'Info.plist').write_bytes(plistlib.dumps(info))
+    claim_minimum_sdk(app)
     subprocess.run(['codesign', '--force', '--sign', '-', str(app)], check=True)
     print(app)
 

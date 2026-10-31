@@ -169,7 +169,7 @@ SideStore), the app signs the game again by itself before it starts.
 | **maximum number of apps** (free account) | Delete another app you built yourself from the device, then run again |
 | **Untrusted Developer** | Step 6 |
 | The app stops opening after a week | The free signing expired. Run the installer again |
-| The game doesn't fill the iPhone Duo's inner display | Build with Xcode 27.2 or later |
+| The game doesn't fill the iPhone Duo's inner display | Build with Xcode 27.2 or later. (A build on an older Xcode records SDK 27.2 itself since this fix; if you have an older install, build it again) |
 | The game crashes or runs out of memory while loading mods | Swipe the app away, then long-press its icon and choose **Safe mode**. It starts once without your mods and leaves them as they were |
 | Something fails on the device | Open the app again, **Settings > Diagnostics > Share the log of the last run** |
 | The build failed with something else | The installer prints the first errors. The full log is `reports/install-build.log` in the project folder |

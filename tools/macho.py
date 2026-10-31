@@ -12,6 +12,26 @@ def packed_version(version):
         raise ValueError(f'Invalid SDK version: {version}')
     return (parts[0] << 16) | ((parts[1] if len(parts) > 1 else 0) << 8) | (parts[2] if len(parts) > 2 else 0)
 
+def raise_sdk_version(data, minimum):
+    """Make a thin 64-bit Mach-O's LC_BUILD_VERSION say it was built with at least
+    SDK `minimum` (like "27.2"). Returns True if it changed. iOS gives an app the
+    newest screen behaviour (such as filling the iPhone Duo's inner display) by the
+    SDK version it records, so an app built on a runner with an older Xcode needs
+    this. Only that field changes; the caller signs the file again."""
+    if len(data) < 32 or struct.unpack_from('<I', data, 0)[0] != 0xfeedfacf:
+        return False
+    wanted = packed_version(minimum)
+    position = 32
+    for _ in range(struct.unpack_from('<I', data, 16)[0]):
+        command, size = struct.unpack_from('<II', data, position)
+        if command == 0x32:  # LC_BUILD_VERSION: platform, minos, sdk
+            if struct.unpack_from('<I', data, position + 16)[0] >= wanted:
+                return False
+            struct.pack_into('<I', data, position + 16, wanted)
+            return True
+        position += size
+    return False
+
 def mobile_path(path):
     """A macOS framework's install name as iOS spells it (no Versions/<x>/)."""
     return re.sub(r'/Versions/[^/]+/', '/', path)

@@ -7,7 +7,7 @@ specific to the Duo.
 
 | | |
 |---|---|
-| Xcode | **27.2 or later** |
+| Xcode | **27.2 or later** to build it yourself. The app built on GitHub (SideStore) is built with an older Xcode, so the build records SDK 27.2 in it, which is what makes iOS fill the inner display |
 | iOS on the Duo | **27.2 recommended**. 27.1 works, but its AssistiveTouch bug needs workarounds for trackpad play ([Controls](CONTROLS.md#trackpad-or-mouse-on-iphone)) |
 | Factorio | **2.1.23, build 87750**, macOS Steam, executable SHA-256 `42218e9676f36687282800e5b6336b049c0f0e45f0f71eb20f90c49ccdec4359` |
 
