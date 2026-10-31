@@ -165,6 +165,7 @@ SideStore), the app signs the game again by itself before it starts.
 | **"Steam sent Factorio … which this app can't run"** | A new major version: pick a listed version under **Settings > Game files** |
 | **"Factorio … didn't load"** on the home screen | That untested update needs a new build of the app; pick the tested version |
 | **"Import your signing certificate"** after preparing | Step 7.2, then **Prepare again** |
+| **"There is no package core"** at launch | The prepared game's link to its data went stale. The app now patches and signs the game again at every launch, so this fixes itself; if it still shows, use **Prepare again** under **Settings > Game files** |
 | **That bundle ID is taken** | Open `.local-config.json` in the project folder with TextEdit, delete the line with `bundle_id`, and run the installer again |
 | **maximum number of apps** (free account) | Delete another app you built yourself from the device, then run again |
 | **Untrusted Developer** | Step 6 |

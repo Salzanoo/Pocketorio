@@ -550,6 +550,12 @@ public func FDSteamCloudAfterGame(_ status: Int32) {
     }
 }
 
+/// At every launch, before the game library loads: patch and sign the game again.
+@_cdecl("FDPrepareGameAtLaunch")
+public func FDPrepareGameAtLaunch() {
+    GamePrepare.repatchAtLaunch()
+}
+
 /// Before Factorio starts, on the main thread. `settings`: the player chose the
 /// Steam Cloud quick action. Returns when the game may start.
 @_cdecl("FDSteamCloudBeforeGame")

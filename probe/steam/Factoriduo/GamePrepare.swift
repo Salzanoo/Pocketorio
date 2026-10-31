@@ -177,6 +177,35 @@ final class GamePrepare: ObservableObject {
         try fm.moveItem(at: staging, to: current)
     }
 
+    /// Every launch, before the game library loads (probe/UIKitEntry.m): patch the
+    /// downloaded game and sign it again, as "Prepare again" does. Rebuilds
+    /// game/Current from scratch, so a stale link to the game's data (after a
+    /// reinstall or a SideStore refresh moved the app's container), a library
+    /// signed by an old certificate or a half-written folder can't survive a
+    /// launch. Only for a game prepared before; the first preparing stays a step
+    /// on the home screen. If it fails, what was there is left as it was.
+    nonisolated static func repatchAtLaunch() {
+        guard isInstalled || savedSummary() != nil, GameCertificate.info != nil,
+              let app = GameDownload.findApp(in: GameDownload.installFolder) else { return }
+        let executable = app.appendingPathComponent("Contents/MacOS/factorio")
+        let started = Date()
+        guard let sha256 = GameDownload.sha256(of: executable),
+              let build = FactorioBuilds.build(sha256: sha256)
+                ?? FactorioBuilds.untested(version: GameDownload.version(of: app), sha256: sha256) else {
+            SteamLog.event("[game-prepare] launch: the downloaded game isn't a build this app can patch; left as it was")
+            return
+        }
+        do {
+            var summary = try patch(build, executable: executable)
+            try install(summary, gameExecutable: executable)
+            summary.installed = true
+            try JSONEncoder().encode(summary).write(to: summaryURL)
+            SteamLog.event("[game-prepare] launch: patched and signed again version=\(build.version) in \(String(format: "%.1f", Date().timeIntervalSince(started))) s")
+        } catch {
+            SteamLog.event("[game-prepare] launch: patching again failed \(error)")
+        }
+    }
+
     /// Before the game starts: sign the game again if the certificate changed
     /// since (a new one from SideStore, say). Quick: the patch is kept.
     nonisolated static func resignIfNeeded(gameExecutable: URL?) {

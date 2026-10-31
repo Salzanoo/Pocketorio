@@ -226,8 +226,14 @@ int FPILauncherMain(int argc, char **argv) {
 
 int ProbeMain(int argc, char **argv) {
     KeepLog();
-    // A game downloaded earlier loads now; otherwise the home screen sets one up,
-    // and it loads after that (StartGame).
+    // A game prepared earlier is patched and signed again first (the app's Steam
+    // library does it), so a stale link or signature can't stop it loading. Then it
+    // loads now; otherwise the home screen sets one up, and it loads after that (StartGame).
+    {
+        void *steam=SteamCloudLibrary();
+        void (*prepare)(void)=steam ? (void (*)(void))dlsym(steam,"FDPrepareGameAtLaunch") : NULL;
+        if (prepare) prepare();
+    }
     LoadGameLibrary();
     bool coreTest=argc==2 && !strcmp(argv[1],"--probe-core");
     bool benchmarkTest=argc==2 && !strcmp(argv[1],"--probe-benchmark");
