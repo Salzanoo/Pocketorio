@@ -1,0 +1,21 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+  B00000000000000000000001 = {isa = PBXProject; buildConfigurationList = B00000000000000000000002; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; knownRegions = (en, Base); mainGroup = B00000000000000000000003; productRefGroup = B00000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = (B00000000000000000000005); };
+  B00000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (B00000000000000000000010); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
+  B00000000000000000000003 = {isa = PBXGroup; children = (B00000000000000000000006,B00000000000000000000004); sourceTree = "<group>"; };
+  B00000000000000000000004 = {isa = PBXGroup; name = Products; children = (B00000000000000000000007); sourceTree = "<group>"; };
+  B00000000000000000000005 = {isa = PBXNativeTarget; buildConfigurationList = B00000000000000000000008; buildPhases = (B00000000000000000000009); buildRules = (); dependencies = (); name = DeviceSnapshot; productName = DeviceSnapshot; productReference = B00000000000000000000007; productType = "com.apple.product-type.bundle.ui-testing"; };
+  B00000000000000000000006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DeviceSnapshot.m; sourceTree = "<group>"; };
+  B00000000000000000000007 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DeviceSnapshot.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+  B00000000000000000000008 = {isa = XCConfigurationList; buildConfigurations = (B00000000000000000000012); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
+  B00000000000000000000009 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B0000000000000000000000B); runOnlyForDeploymentPostprocessing = 0; };
+  B0000000000000000000000B = {isa = PBXBuildFile; fileRef = B00000000000000000000006; };
+  B00000000000000000000010 = {isa = XCBuildConfiguration; name = Debug; buildSettings = {SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 26.0; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES;}; };
+  B00000000000000000000012 = {isa = XCBuildConfiguration; name = Debug; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = local.factorio.probesnapshot; PRODUCT_NAME = "$(TARGET_NAME)"; GENERATE_INFOPLIST_FILE = YES; CODE_SIGN_STYLE = Automatic; TARGETED_DEVICE_FAMILY = "1,2"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; ARCHS = arm64; DEBUG_INFORMATION_FORMAT = dwarf;}; };
+ };
+ rootObject = B00000000000000000000001;
+}

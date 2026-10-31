@@ -1,0 +1,129 @@
+"""Small, strict reader for the ARM64 slice of this local Mach-O research target."""
+import re
+import struct
+from pathlib import Path
+
+DYLIB_COMMANDS = {0xc, 0x80000018, 0x8000001f, 0x80000023}
+
+def packed_version(version):
+    """Encode an Apple SDK version for LC_BUILD_VERSION."""
+    parts = [int(part) for part in version.split('.')]
+    if not 1 <= len(parts) <= 3 or not 0 <= parts[0] <= 65535 or any(not 0 <= part <= 255 for part in parts[1:]):
+        raise ValueError(f'Invalid SDK version: {version}')
+    return (parts[0] << 16) | ((parts[1] if len(parts) > 1 else 0) << 8) | (parts[2] if len(parts) > 2 else 0)
+
+def mobile_path(path):
+    """A macOS framework's install name as iOS spells it (no Versions/<x>/)."""
+    return re.sub(r'/Versions/[^/]+/', '/', path)
+
+def needs_facade(path):
+    """Libraries the port replaces with a reexporting facade (P<index>.dylib), which
+    keeps the library's ordinal: every framework, and the Steam API."""
+    return '.framework/' in path or 'libsteam_api' in path
+
+def facade_name(index):
+    return f'P{index:02}.dylib'
+
+def library_replacements(libraries):
+    """Install names for the iOS build: facades by position, the rest as iOS spells them.
+    probe/patcher/GamePatcher.swift (libraryReplacements) does the same on the device."""
+    result = {lib: mobile_path(lib) for lib in libraries}
+    result.update({lib: '@executable_path/Frameworks/'+facade_name(i)
+                   for i, lib in enumerate(libraries) if needs_facade(lib)})
+    return result
+
+def cstring(data, offset):
+    end = data.find(b'\0', offset)
+    if end < 0:
+        raise ValueError('Unterminated Mach-O string')
+    return bytes(data[offset:end]).decode('utf-8')
+
+class MachO:
+    def __init__(self, path):
+        self.path = Path(path)
+        data = self.path.read_bytes()
+        if data[:4] == b'\xca\xfe\xba\xbe':
+            count = struct.unpack_from('>I', data, 4)[0]
+            for i in range(count):
+                cpu, sub, off, size, align = struct.unpack_from('>IIIII', data, 8 + 20*i)
+                if cpu == 0x100000c:
+                    data = data[off:off+size]
+                    break
+            else:
+                raise ValueError('No ARM64 slice')
+        if data[:4] != b'\xcf\xfa\xed\xfe':
+            raise ValueError('Expected little-endian 64-bit Mach-O')
+        if struct.unpack_from('<I', data, 4)[0] != 0x100000c:
+            raise ValueError('Expected ARM64')
+        self.data = bytearray(data)
+        self.commands = []
+        self.libraries = []
+        self.sections = []
+        count, size = struct.unpack_from('<II', data, 16)
+        pos = 32
+        for i in range(count):
+            cmd, length = struct.unpack_from('<II', data, pos)
+            if length < 8 or pos + length > 32 + size:
+                raise ValueError('Malformed load command')
+            self.commands.append((cmd, pos, length))
+            if cmd in DYLIB_COMMANDS:
+                self.libraries.append(cstring(data, pos + struct.unpack_from('<I', data, pos+8)[0]))
+            if cmd == 0x19:
+                nsects = struct.unpack_from('<I', data, pos+64)[0]
+                for j in range(nsects):
+                    sp = pos + 72 + 80*j
+                    name = data[sp:sp+16].rstrip(b'\0').decode()
+                    seg = data[sp+16:sp+32].rstrip(b'\0').decode()
+                    addr, sz, off = struct.unpack_from('<QQI', data, sp+32)
+                    self.sections.append(dict(name=name, segment=seg, address=addr, size=sz, offset=off))
+            pos += length
+        assert pos == 32 + size
+
+    def symbols(self):
+        cmd, pos, length = next(c for c in self.commands if c[0] == 2)
+        symoff, count, stroff, strsize = struct.unpack_from('<IIII', self.data, pos+8)
+        strings = self.data[stroff:stroff+strsize]
+        result = []
+        for i in range(count):
+            name, typ, sect, desc, value = struct.unpack_from('<IBBHQ', self.data, symoff + 16*i)
+            if not name or typ & 0xe0:
+                continue
+            symbol = dict(name=cstring(strings, name), type=typ, section=sect, desc=desc, address=value)
+            if typ & 0x0e == 0 and typ & 1:
+                ordinal = desc >> 8
+                symbol['library'] = self.libraries[ordinal-1] if 0 < ordinal <= len(self.libraries) else f'ordinal:{ordinal}'
+                symbol['weak'] = bool(desc & 0x40)
+            result.append(symbol)
+        return result
+
+    def retarget(self, destination, platform, replacements, sdk_version):
+        """Change platform and install names on a COPY; do not alter instructions."""
+        result = bytearray(self.data)
+        sdk = packed_version(sdk_version)
+        commands = []
+        for cmd, pos, size in self.commands:
+            chunk = bytes(result[pos:pos+size])
+            if cmd in DYLIB_COMMANDS:
+                old = cstring(chunk, struct.unpack_from('<I', chunk, 8)[0])
+                name = replacements.get(old, old).encode() + b'\0'
+                newsize = (24 + len(name) + 7) & ~7
+                chunk = struct.pack('<IIIIII', cmd, newsize, 24, 0, 0x10000, 0x10000) + name
+                chunk += bytes(newsize-len(chunk))
+            elif cmd == 0x32:
+                chunk = bytearray(chunk)
+                struct.pack_into('<III', chunk, 8, platform, 26 << 16, sdk)
+            elif cmd == 0x24:
+                chunk = struct.pack('<IIIIII', 0x32, 24, platform, 26 << 16, sdk, 0)
+            elif cmd == 0x1d: # signature is regenerated by codesign
+                continue
+            commands.append(chunk)
+        payload = b''.join(commands)
+        first_section = min(s['offset'] for s in self.sections if s['offset'] > 0)
+        if 32+len(payload) > first_section:
+            raise ValueError('Not enough load-command space')
+        oldsize = struct.unpack_from('<I', result, 20)[0]
+        result[32:32+max(oldsize,len(payload))] = payload + bytes(max(oldsize,len(payload))-len(payload))
+        struct.pack_into('<II', result, 16, len(commands), len(payload))
+        destination = Path(destination)
+        destination.write_bytes(result)
+        destination.chmod(0o755)
