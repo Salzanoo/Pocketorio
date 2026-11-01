@@ -159,6 +159,8 @@ struct CloudLaunchView: View {
     @ObservedObject private var prepare = GamePrepare.shared
     /// Read by FPIFullScreen in probe/SDLInputBridge.c when SDL sizes the game view.
     static let fullScreenKey = "factoriduo.display.fullScreen"
+    /// Read by probe/UIKitEntry.m when it builds the game's arguments (--disable-audio).
+    static let soundOffKey = "factoriduo.sound.off"
 
     /// A signed game is in place for the launcher (probe/UIKitEntry.m) to load.
     private var gameReady: Bool {
@@ -443,6 +445,7 @@ struct SettingsView: View {
                 }
                 Section {
                     NavigationLink("Display") { DisplaySettingsPage() }
+                    NavigationLink("Sound") { SoundSettingsPage() }
                     NavigationLink("Diagnostics") { Form { DiagnosticsSection() }.navigationTitle("Diagnostics") }
                 }
             }
@@ -492,6 +495,22 @@ struct DisplaySettingsPage: View {
             }
         }
         .navigationTitle("Display")
+    }
+}
+
+struct SoundSettingsPage: View {
+    @State private var soundOff = UserDefaults.standard.bool(forKey: CloudLaunchView.soundOffKey)
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Turn sound off to save memory", isOn: $soundOff)
+                    .onChange(of: soundOff) { _, value in UserDefaults.standard.set(value, forKey: CloudLaunchView.soundOffKey) }
+            } footer: {
+                Text("Starts the game without audio, which frees memory: a large set of mods can have a gigabyte of sounds. Takes effect the next time the game starts: close the app from the app switcher and open it again.")
+            }
+        }
+        .navigationTitle("Sound")
     }
 }
 

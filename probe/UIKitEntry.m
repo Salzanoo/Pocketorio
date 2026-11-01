@@ -371,10 +371,11 @@ int ProbeMain(int argc, char **argv) {
                 // Start at the medium preset once; after that the game keeps whatever the
                 // player picks under Settings > Graphics.
                 if (fresh) [arguments addObjectsFromArray:@[@"--graphics-quality",@"medium"]];
-                // A big mod set's sounds can take a gigabyte, which a large modded save can't
-                // spare under iOS's memory limit (84 mods: 0.9 GB of 6.1), so modded games are silent.
-                if (modded) {
-                    fprintf(stderr,"FACTORIO_PROBE: mods enabled, starting without audio to save memory\n");
+                // Settings > Sound off (CloudLaunch.swift keeps it in the app's UserDefaults):
+                // a big mod set's sounds can take a gigabyte (84 mods: 0.9 GB of 6.1), which a
+                // large modded save may not be able to spare under iOS's memory limit.
+                if ([[NSUserDefaults standardUserDefaults] boolForKey:@"factoriduo.sound.off"]) {
+                    fprintf(stderr,"FACTORIO_PROBE: sound is off in Settings, starting without audio to save memory\n");
                     [arguments addObject:@"--disable-audio"];
                 }
             }

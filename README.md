@@ -53,9 +53,17 @@ There are two ways to get the app onto the device.
 
 - **SideStore** (no Mac needed after setup): add the source
   `https://github.com/Salzanoo/Pocketorio/releases/latest/download/apps.json` to
-  SideStore and install from it. See [SideStore](docs/SIDESTORE.md).
+  SideStore and install from it. Builds are on the
+  [Pocketorio releases page](https://github.com/Salzanoo/Pocketorio/releases). See
+  [SideStore](docs/SIDESTORE.md).
 - **Xcode** (on a Mac): double-click **`Install Factorio.command`**. The step-by-step
   [install guide](docs/INSTALL.md) starts from installing Xcode.
+
+**Known issue: SideStore and the memory limit.** With a free Apple Account, SideStore
+drops the app's `increased-memory-limit` entitlement when it signs the app
+([SideStore#1616](https://github.com/SideStore/SideStore/issues/1616)). Without it iOS
+allows about 3.3 GB, and the game is closed by iOS while loading. Installing with Xcode
+keeps the entitlement. See [SideStore](docs/SIDESTORE.md#memory-limit-bug).
 
 Either way, the app then asks you to sign in to Steam, import the signing certificate,
 and download and prepare Factorio on the device.

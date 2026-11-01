@@ -29,6 +29,23 @@ After installing:
 
 SideStore refreshes the app in the background while it can reach its VPN.
 
+## Memory limit bug
+
+With a free Apple Account, SideStore removes the app's
+`com.apple.developer.kernel.increased-memory-limit` entitlement when it signs the app
+([SideStore#1616](https://github.com/SideStore/SideStore/issues/1616)); the app has
+it, and the Xcode route keeps it. Without it iOS allows about 3.3 GB, and the game is
+closed by iOS while loading, around half way.
+
+To tell which you have, open **Settings > Diagnostics** in the app, share the log of
+the last run and add the first `FPI_MEMORY` line's used and free numbers: about 3,375 MB
+means the entitlement was dropped, about 6,100 MB that it was kept.
+
+Until SideStore fixes it: install with Xcode ([install guide](INSTALL.md)), or use a
+sideloader that keeps it (AltStore Classic 2.2 or later, or Impactor), or a community
+build of SideStore with a fix, which is not from the SideStore project: trust it as
+you would any app that holds your Apple Account sign-in.
+
 ## Updates and saves
 
 Each release (see [Releasing](RELEASING.md)) is a new version; SideStore offers it

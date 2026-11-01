@@ -36,8 +36,9 @@ sharper picture raise **Settings > Graphics** (graphics quality, texture
 compression, video memory usage) and restart the game; the choices are kept. While
 extra mods are enabled (anything beyond the base game, Space Age, Quality and
 Elevated Rails) the app instead holds the memory savers each start, adds
-half-resolution terrain and turns sound off, which is what large mod sets need
-to fit iOS's memory limit. If the game is closed by iOS after raising the
+half-resolution terrain, which is what large mod sets need to fit iOS's memory
+limit. Sound stays on; for a big mod set, turn it off under **Settings > Sound**
+(a large set of mods can have a gigabyte of sounds) and start the game again. If the game is closed by iOS after raising the
 settings, lower them again; the log's `FPI_MEMORY` lines show how close it runs.
 
 **Whole screen:** by default the game view keeps a border inside the screen's
