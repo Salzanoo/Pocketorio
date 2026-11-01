@@ -226,7 +226,11 @@ def main():
     info.update(build_app_icon(app, args.sdk))
     (app/'Info.plist').write_bytes(plistlib.dumps(info))
     claim_minimum_sdk(app)
-    subprocess.run(['codesign', '--force', '--sign', '-', str(app)], check=True)
+    # The app's entitlements (the larger memory limit), as Xcode applies them from
+    # the project; a signature without them drops them, and SideStore signs again
+    # with only what the IPA already carries.
+    entitlements = Path(__file__).resolve().parent.parent / 'FactorioProbe.entitlements'
+    subprocess.run(['codesign', '--force', '--sign', '-', '--entitlements', str(entitlements), str(app)], check=True)
     print(app)
 
 
