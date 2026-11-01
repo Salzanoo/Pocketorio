@@ -65,7 +65,7 @@ static void FPSymbolSize(UIButton *b,CGFloat size) {
 @property(nonatomic,strong) UIView *systemPill, *modeTrack, *systemDivider, *leftPill, *rightPill, *morePanel, *deck;
 @property(nonatomic,strong) UIControl *moreScrim;
 @property(nonatomic,strong) NSArray<UIButton *> *modeButtons;
-@property(nonatomic,strong) UIButton *toggle, *keyboardToggle, *typeToggle;
+@property(nonatomic,strong) UIButton *toggle, *keyboardToggle, *typeToggle, *screenToggle;
 @property(nonatomic) FPTouchMode mode;  // as chosen; the surface acts as Direct while Use and Mine are hidden
 @property(nonatomic) BOOL expanded;
 @property(nonatomic) BOOL dimmed;
@@ -168,6 +168,7 @@ static void FPSymbolSize(UIButton *b,CGFloat size) {
         self.modeButtons=@[[self segment:@"Direct" symbol:@"hand.raised"],[self segment:@"Precise" symbol:@"cursorarrow"]];
         self.keyboardToggle=[self systemButton:@"keyboard" label:@"Keyboard" action:@selector(toggleKeyboard)];
         self.typeToggle=[self systemButton:@"character.textbox" label:@"Type with the iOS keyboard" action:@selector(toggleTextBar)];
+        self.screenToggle=[self systemButton:@"arrow.up.left.and.arrow.down.right" label:@"Use the whole screen" action:@selector(toggleWholeScreen)];
         self.toggle=[self systemButton:@"eye.slash" label:@"Hide controls" action:@selector(toggleControls)];
         [self buildMorePanel];
 
@@ -369,7 +370,7 @@ static void FPSymbolSize(UIButton *b,CGFloat size) {
     NSMutableArray *views=[NSMutableArray arrayWithArray:self.buttons];
     [views addObjectsFromArray:self.modifiers]; [views addObjectsFromArray:self.modeButtons];
     [views addObjectsFromArray:@[self.joystick,self.systemPill,self.modeTrack,self.systemDivider,self.leftPill,self.rightPill,
-                                 self.morePanel,self.keyboardToggle,self.typeToggle,self.toggle]];
+                                 self.morePanel,self.keyboardToggle,self.typeToggle,self.screenToggle,self.toggle]];
     return views;
 }
 // Controls fade back while the player watches the factory and return on the next touch.
@@ -448,6 +449,7 @@ static void FPSymbolSize(UIButton *b,CGFloat size) {
     self.keyboardToggle.tintColor=self.keyboard.hidden ? UIColor.whiteColor : FPInk();
     self.typeToggle.backgroundColor=self.textBar.hidden ? UIColor.clearColor : FPAccent();
     self.typeToggle.tintColor=self.textBar.hidden ? UIColor.whiteColor : FPInk();
+    [self refreshScreenToggle];
     [self.toggle setImage:[UIImage systemImageNamed:self.expanded ? @"eye.slash" : @"eye"] forState:UIControlStateNormal];
     self.toggle.accessibilityLabel=self.expanded ? @"Hide controls" : @"Show controls";
     [self setNeedsLayout];
@@ -535,17 +537,37 @@ static void FPSymbolSize(UIButton *b,CGFloat size) {
     return NO;
 }
 - (void)textFieldDidEndEditing:(UITextField *)field { field.hidden=YES; [self applyVisibility]; }
+// Maximize the game to the whole screen, or inset it again to the safe area: the same
+// setting as Settings > Display > Use the whole screen (CloudLaunch.swift), read by SDL's
+// view-frame calculation (tools/prepare_sdl.py, FPIFullScreen). Laying out the SDL view
+// again applies it the way a fold or unfold does: the view takes the new frame and the
+// game gets a resize.
+static NSString *const FPFullScreenKey=@"factoriduo.display.fullScreen";
+- (void)refreshScreenToggle {
+    BOOL full=[[NSUserDefaults standardUserDefaults] boolForKey:FPFullScreenKey];
+    [self.screenToggle setImage:[UIImage systemImageNamed:full ? @"arrow.down.right.and.arrow.up.left" : @"arrow.up.left.and.arrow.down.right"] forState:UIControlStateNormal];
+    self.screenToggle.accessibilityLabel=full ? @"Keep the game clear of the corners" : @"Use the whole screen";
+}
+- (void)toggleWholeScreen {
+    NSUserDefaults *defaults=[NSUserDefaults standardUserDefaults];
+    [defaults setBool:![defaults boolForKey:FPFullScreenKey] forKey:FPFullScreenKey];
+    [defaults synchronize];
+    [self refreshScreenToggle];
+    UIView *view=self.window.rootViewController.view;
+    [view setNeedsLayout]; [view layoutIfNeeded];
+    [self setNeedsLayout];
+}
 - (void)toggleControls {
     [self releaseInputs]; self.expanded=!self.expanded; self.autoHidden=NO;
     self.keyboard.hidden=YES;
     [self applyVisibility];
 }
 
-// Top pill: Direct and Precise on a track, a divider, then keyboard, text box and hide. Hidden
-// controls leave only the eye, where it was.
+// Top pill: Direct and Precise on a track, a divider, then keyboard, text box, whole screen and hide.
+// Hidden controls leave the whole-screen button and the eye, where they were.
 - (CGFloat)pillWidth {
     CGFloat s=self.scale;
-    return round(5*s)+2*round(66*s)+round(12*s)+3*round(34*s)+round(4*s);
+    return round(5*s)+2*round(66*s)+round(12*s)+4*round(34*s)+round(4*s);
 }
 - (CGRect)layoutPillAt:(CGPoint)origin {
     CGFloat s=self.scale, height=round(38*s), pad=round(5*s), item=height-2*pad, x=origin.x+pad;
@@ -554,12 +576,12 @@ static void FPSymbolSize(UIButton *b,CGFloat size) {
     self.modeTrack.layer.cornerRadius=self.modeTrack.frame.size.height/2;
     self.systemDivider.frame=CGRectMake(x+round(6*s),origin.y+round(height/4),1,round(height/2));
     x+=round(12*s);
-    for (UIButton *b in @[self.keyboardToggle,self.typeToggle,self.toggle]) {
+    for (UIButton *b in @[self.keyboardToggle,self.typeToggle,self.screenToggle,self.toggle]) {
         b.frame=CGRectMake(x,origin.y+pad,round(34*s),item); b.layer.cornerRadius=item/2; x=CGRectGetMaxX(b.frame);
         FPSymbolSize(b,14*s);
     }
     CGRect pill=CGRectMake(origin.x,origin.y,x+round(4*s)-origin.x,height);
-    if (!self.expanded) pill=CGRectInset(self.toggle.frame,-round(4*s),-pad);
+    if (!self.expanded) pill=CGRectInset(CGRectUnion(self.screenToggle.frame,self.toggle.frame),-round(4*s),-pad);
     self.systemPill.frame=pill; self.systemPill.layer.cornerRadius=height/2;
     return pill;
 }

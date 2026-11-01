@@ -161,7 +161,7 @@ static void checkLayout(LayoutOverlay *overlay,NSString *name) {
     }
     for (FPInputButton *b in overlay.leftRail) check(inside(b.frame,overlay.leftPill.frame),[NSString stringWithFormat:@"%@: %@ outside its rail",name,b.accessibilityLabel]);
     for (FPInputButton *b in overlay.rightRail) check(inside(b.frame,overlay.rightPill.frame),[NSString stringWithFormat:@"%@: %@ outside its rail",name,b.accessibilityLabel]);
-    for (UIButton *b in [overlay.modeButtons arrayByAddingObjectsFromArray:@[overlay.keyboardToggle,overlay.typeToggle,overlay.toggle]])
+    for (UIButton *b in [overlay.modeButtons arrayByAddingObjectsFromArray:@[overlay.keyboardToggle,overlay.typeToggle,overlay.screenToggle,overlay.toggle]])
         check(inside(b.frame,overlay.systemPill.frame),[NSString stringWithFormat:@"%@: %@ outside the top pill",name,b.accessibilityLabel]);
     for (FPInputButton *b in overlay.moreItems) check(inside(b.frame,overlay.morePanel.bounds),[NSString stringWithFormat:@"%@: %@ outside the More panel",name,b.accessibilityLabel]);
     check(inside(overlay.morePanel.frame,area),[name stringByAppendingString:@": More panel outside the safe area"]);
@@ -249,7 +249,7 @@ static void checkLayout(LayoutOverlay *overlay,NSString *name) {
     // Every symbol exists on this iOS.
     for (FPInputButton *b in [overlay.buttons arrayByAddingObjectsFromArray:overlay.moreItems])
         check([b imageForState:UIControlStateNormal]!=nil,[b.accessibilityLabel stringByAppendingString:@": no symbol"]);
-    for (UIButton *b in @[overlay.keyboardToggle,overlay.typeToggle,overlay.toggle])
+    for (UIButton *b in @[overlay.keyboardToggle,overlay.typeToggle,overlay.screenToggle,overlay.toggle])
         check([b imageForState:UIControlStateNormal]!=nil,[b.accessibilityLabel stringByAppendingString:@": no symbol"]);
     for (UIButton *b in overlay.modeButtons) check(b.configuration.image!=nil,[b.accessibilityLabel stringByAppendingString:@": no symbol"]);
 

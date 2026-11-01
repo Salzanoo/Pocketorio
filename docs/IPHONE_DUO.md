@@ -47,6 +47,11 @@ stay clear of the rounded corners. Long-press the app icon, choose **Settings**,
 and turn on **Use the whole screen** to drop it; the corners may then cover the
 edges of panels such as the minimap and the quickbar.
 
+The same switch is on the screen: the arrows button beside the eye (hide controls) at
+the top maximizes the game to the whole screen and, pressed again, insets it to the
+safe area. The game resizes as it does when the Duo folds or unfolds, so the picture
+may flicker once. It changes the same setting, so it is kept for the next start.
+
 ## Inner display
 
 The game runs on the inner display, unfolded. The port selects the active
